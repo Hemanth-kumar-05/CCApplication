@@ -133,7 +133,7 @@ namespace Encrypt
             {
                 File.Create(Path.Combine(currentDir, "Password_Encrypt.ini")).Dispose();
             }
-            Console.WriteLine($"Writing key {key} to section {section} in {currentDir}Password_Encrypt.ini");
+            Console.WriteLine($"Writing key {key} to section {section} in {currentDir}\\Password_Encrypt.ini");
             iniFile.IniWriteValue("DefaultNames", section, key);
         }
 

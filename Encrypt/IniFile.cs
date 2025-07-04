@@ -16,7 +16,8 @@ namespace Encrypt
 
         public IniFile(string Path)
         {
-            this.path = Path;
+            // Always use Path.GetFullPath and Path.Combine to ensure correct path
+            this.path = System.IO.Path.GetFullPath(Path);
         }
 
         public void IniWriteValue(string Section, string Key, string Value)
