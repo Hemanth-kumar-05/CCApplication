@@ -166,8 +166,20 @@ namespace Crawler2
                         {
                             try
                             {
-                                Console.WriteLine("[DEBUG] Calling Cert1 with: " + array[1] + ", " + array[2]);
-                                Crawler.Cert1(array[1], array[2], stringBuilder, Crawler.FileName, text);
+                                if (array.Length > 2)
+                                {
+                                    Console.WriteLine("[DEBUG] Calling Cert1 with: " + array[1] + ", " + array[2]);
+                                    Crawler.Cert1(array[1], array[2], stringBuilder, Crawler.FileName, text);
+                                }
+                                else if (array.Length > 1)
+                                {
+                                    Console.WriteLine("[DEBUG] Calling Cert1 with: " + array[1] + ", p12");
+                                    Crawler.Cert1(array[1], "p12", stringBuilder, Crawler.FileName, text);
+                                }
+                                else
+                                {
+                                    Console.WriteLine("[DEBUG] Not enough data in Certificates entry at index: " + i);
+                                }
                                 goto IL_1BC;
                             }
                             catch (Exception ex)
@@ -201,28 +213,25 @@ namespace Crawler2
 
         private static NameValueCollection GetNameValueCollectionSection(string section, string filePath)
         {
-            Console.WriteLine("[DEBUG] GetNameValueCollectionSection called for section: " + section + ", filePath: " + filePath);
             XmlDocument xmlDocument = new XmlDocument();
             NameValueCollection nameValueCollection = new NameValueCollection();
-            xmlDocument.Load(filePath);
-            XmlNode sectionNode = xmlDocument.SelectSingleNode($"//{section}");
-            if (sectionNode != null)
+            Configuration configuration = ConfigurationManager.OpenMappedExeConfiguration(new ExeConfigurationFileMap
             {
-                foreach (XmlNode xmlNode2 in sectionNode.ChildNodes)
+                ExeConfigFilename = filePath
+            }, ConfigurationUserLevel.None);
+            string rawXml = configuration.GetSection(section).SectionInformation.GetRawXml();
+            Console.WriteLine("[DEBUG] Raw XML for section '" + section + "': " + rawXml);
+            xmlDocument.LoadXml(rawXml);
+            XmlNode xmlNode = xmlDocument.ChildNodes[0];
+            foreach (XmlNode xmlNode2 in xmlNode)
+            {
+                nameValueCollection.Add(xmlNode2.Attributes[0].Value, xmlNode2.Attributes[1].Value);
+                bool flag = section == "Certificates";
+                if (flag)
                 {
-                    if (xmlNode2.NodeType != XmlNodeType.Element) continue;
-                    if (xmlNode2.Attributes != null && xmlNode2.Attributes.Count >= 2)
-                    {
-                        nameValueCollection.Add(xmlNode2.Attributes[0].Value, xmlNode2.Attributes[1].Value);
-                        bool flag = section == "Certificates";
-                        if (flag && xmlNode2.Attributes.Count >= 3)
-                        {
-                            nameValueCollection.Add(xmlNode2.Attributes[0].Value, xmlNode2.Attributes[2].Value);
-                        }
-                    }
+                    nameValueCollection.Add(xmlNode2.Attributes[0].Value, xmlNode2.Attributes[2].Value);
                 }
             }
-            Console.WriteLine("[DEBUG] Returning NameValueCollection with count: " + nameValueCollection.Count);
             return nameValueCollection;
         }
 
@@ -235,6 +244,7 @@ namespace Crawler2
             while (i < files.Length)
             {
                 string text = files[i];
+                text = text.Replace('\\', Path.DirectorySeparatorChar);
                 Console.WriteLine("[DEBUG] Processing file: " + text);
                 X509Certificate2Collection x509Certificate2Collection = new X509Certificate2Collection();
                 bool flag = certType.Equals("p12", StringComparison.CurrentCultureIgnoreCase);

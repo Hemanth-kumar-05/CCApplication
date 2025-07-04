@@ -105,12 +105,10 @@ namespace Encrypt
         public static string ReadConfig(string section, string key, string baseDirPath)
         {
             string text = string.Empty;
-            string empty = string.Empty;
-            string empty2 = string.Empty;
             bool flag = string.IsNullOrEmpty(baseDirPath);
             if (flag)
             {
-                text = AppDomain.CurrentDomain.BaseDirectory;
+                text = Directory.GetCurrentDirectory();
             }
             text = baseDirPath.Trim();
             IniFile iniFile = new IniFile(text + "Password_Encrypt.ini");
