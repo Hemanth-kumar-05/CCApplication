@@ -204,23 +204,27 @@ namespace Crawler2
             foreach (XmlNode xmlNode2 in xmlNode)
             {
                 nameValueCollection.Add(xmlNode2.Attributes[0].Value, xmlNode2.Attributes[1].Value);
-                bool flag = section == "Certificates";
-                if (flag)
-                {
-                    nameValueCollection.Add(xmlNode2.Attributes[0].Value, xmlNode2.Attributes[2].Value);
-                }
+                // Remove duplicate addition for Certificates section
             }
             return nameValueCollection;
         }
 
+        // Remove duplicate processing of the same certificate file in Cert1
         private static void Cert1(string certpath, string certType, StringBuilder sb, string Filename, string newLine)
         {
             string[] files = Directory.GetFiles(certpath, "*." + certType, SearchOption.TopDirectoryOnly);
+            HashSet<string> processedFiles = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
             int i = 0;
             while (i < files.Length)
             {
                 string text = files[i];
                 text = text.Replace('/', Path.DirectorySeparatorChar);
+                if (processedFiles.Contains(text))
+                {
+                    i++;
+                    continue;
+                }
+                processedFiles.Add(text);
                 X509Certificate2Collection x509Certificate2Collection = new X509Certificate2Collection();
                 bool flag = certType.Equals("p12", StringComparison.CurrentCultureIgnoreCase);
                 if (flag)
@@ -351,7 +355,7 @@ namespace Crawler2
                         File.WriteAllText(Filename, sb.ToString());
                     }
                 }
-                goto IL_159;
+                i++;
             }
         }
 
