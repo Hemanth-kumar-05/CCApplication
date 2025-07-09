@@ -1,0 +1,30 @@
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.5.2.0
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Crawler2", "Crawler2\Crawler2.csproj", "{B8E9EBD3-0438-EB3F-0A02-77CE4ADD29A8}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Encrypt", "Encrypt\Encrypt.csproj", "{5EBC55B6-D92A-47BA-D2B3-8030F9B6FA1F}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{B8E9EBD3-0438-EB3F-0A02-77CE4ADD29A8}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{B8E9EBD3-0438-EB3F-0A02-77CE4ADD29A8}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{B8E9EBD3-0438-EB3F-0A02-77CE4ADD29A8}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{B8E9EBD3-0438-EB3F-0A02-77CE4ADD29A8}.Release|Any CPU.Build.0 = Release|Any CPU
+		{5EBC55B6-D92A-47BA-D2B3-8030F9B6FA1F}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{5EBC55B6-D92A-47BA-D2B3-8030F9B6FA1F}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{5EBC55B6-D92A-47BA-D2B3-8030F9B6FA1F}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{5EBC55B6-D92A-47BA-D2B3-8030F9B6FA1F}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {461C2DF1-35E1-4068-8154-6690BE409F85}
+	EndGlobalSection
+EndGlobal

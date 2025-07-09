@@ -22,35 +22,30 @@ namespace Encrypt
             {
                 string certPath = args[i];
                 string certPassword = args[i + 1];
-                bool nextCertFlag = args[i + 2].ToLower() == "y";
+                // bool nextCertFlag = args[i + 2].ToLower() == "y"; // Not used
 
                 // Validate certificate path and its password
-                Console.WriteLine("Validating Certificate");
                 X509Certificate2Collection x509Certificate2Collection = new X509Certificate2Collection();
                 try
                 {
                     x509Certificate2Collection.Import(certPath, certPassword, X509KeyStorageFlags.MachineKeySet);
                     string key = Encryption.Encrypt(certPassword);
-                    // Console.WriteLine($"Certificate {certPath} is valid. Writing encrypted password to config.");
                     Encryption.writeConfig(certPath, key);
                 }
                 catch
                 {
                     // Handle the case where the certificate is invalid or the password is incorrect
-                    // Update the password in the config file
                     string existingKey = Encryption.ReadConfig(certPath, "key", Directory.GetCurrentDirectory());
                     if (!string.IsNullOrEmpty(existingKey))
                     {
                         string decryptedPassword = Encryption.Decrypt(existingKey);
                         if (decryptedPassword != certPassword)
                         {
-                            Console.WriteLine("Updating password");
                             Encryption.writeConfig(certPath, Encryption.Encrypt(certPassword));
                         }
                     }
                     else
                     {
-                        Console.WriteLine("No existing key found. Writing new key.");
                         Encryption.writeConfig(certPath, Encryption.Encrypt(certPassword));
                     }
                 }
@@ -60,11 +55,11 @@ namespace Encrypt
 
         public static string Encrypt(string clearText)
         {
-            string password = "securepassword"; // Replace with your actual password
+            string password = "CitiPassword"; // Replace with your actual password
             byte[] bytes = Encoding.Unicode.GetBytes(clearText);
             using (Aes aes = Aes.Create())
             {
-                Rfc2898DeriveBytes rfc2898DeriveBytes = new Rfc2898DeriveBytes(password, new byte[] { 111, 112, 113, 114, 115, 116, 117, 118, 119, 120, 121, 122 });
+                Rfc2898DeriveBytes rfc2898DeriveBytes = new Rfc2898DeriveBytes(password, new byte[] { 73, 118, 97, 110, 32, 77, 101, 100, 118, 101, 100, 101, 118 });
                 aes.Key = rfc2898DeriveBytes.GetBytes(32);
                 aes.IV = rfc2898DeriveBytes.GetBytes(16);
                 using (MemoryStream memoryStream = new MemoryStream())
@@ -82,11 +77,11 @@ namespace Encrypt
 
         public static string Decrypt(string cipherText)
         {
-            string password = "securepassword";
+            string password = "CitiPassword";
             byte[] array = Convert.FromBase64String(cipherText);
             using (Aes aes = Aes.Create())
             {
-                Rfc2898DeriveBytes rfc2898DeriveBytes = new Rfc2898DeriveBytes(password, new byte[] { 111, 112, 113, 114, 115, 116, 117, 118, 119, 120, 121, 122 });
+                Rfc2898DeriveBytes rfc2898DeriveBytes = new Rfc2898DeriveBytes(password, new byte[] { 73, 118, 97, 110, 32, 77, 101, 100, 118, 101, 100, 101, 118 });
                 aes.Key = rfc2898DeriveBytes.GetBytes(32);
                 aes.IV = rfc2898DeriveBytes.GetBytes(16);
                 using (MemoryStream memoryStream = new MemoryStream())
@@ -124,6 +119,7 @@ namespace Encrypt
 
         public static void writeConfig(string section, string key)
         {
+            section = section.Replace('/', '\\');
             string currentDir = Directory.GetCurrentDirectory();
             IniFile iniFile = new IniFile(Path.Combine(currentDir, "Password_Encrypt.ini"));
             bool flag = !File.Exists(Path.Combine(currentDir, "Password_Encrypt.ini"));
@@ -131,7 +127,6 @@ namespace Encrypt
             {
                 File.Create(Path.Combine(currentDir, "Password_Encrypt.ini")).Dispose();
             }
-            Console.WriteLine($"Writing key {key} to section {section} in {currentDir}\\Password_Encrypt.ini");
             iniFile.IniWriteValue("DefaultNames", section, key);
         }
 
@@ -143,12 +138,13 @@ namespace Encrypt
             {
                 msg = "in " + functionname + ". Error : " + msg;
             }
-            msg = "in " + functionname + ". Info : " + msg;
-            bool flag = string.IsNullOrEmpty(text);
-            if (!flag)
+            else
             {
-                bool flag2 = File.Exists(text);
-                if (flag2)
+                msg = "in " + functionname + ". Info : " + msg;
+            }
+            if (!string.IsNullOrEmpty(text))
+            {
+                if (File.Exists(text))
                 {
                     File.AppendAllText(text, DateTime.Now.ToString() + "--" + msg + Environment.NewLine);
                 }
