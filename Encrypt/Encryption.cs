@@ -105,8 +105,11 @@ namespace Encrypt
             {
                 text = Directory.GetCurrentDirectory();
             }
-            text = baseDirPath.Trim();
-            IniFile iniFile = new IniFile(text + "Password_Encrypt.ini");
+            else
+            {
+                text = baseDirPath.Trim();
+            }
+            IniFile iniFile = new IniFile(Path.Combine(text, "Password_Encrypt.ini"));
             bool flag2 = !Directory.Exists(text);
             if (flag2)
             {

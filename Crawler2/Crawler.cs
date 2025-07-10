@@ -103,13 +103,19 @@ namespace Crawler2
         {
             try
             {
+                // Console.WriteLine("[DEBUG] Main started. Current Directory: " + Directory.GetCurrentDirectory());
                 Crawler.baseDirectory = Directory.GetCurrentDirectory() + Path.DirectorySeparatorChar;
+                // Console.WriteLine("[DEBUG] baseDirectory set to: " + Crawler.baseDirectory);
                 Crawler.FileName = Path.Combine(Crawler.baseDirectory, "crawlerCert.csv");
+                // Console.WriteLine("[DEBUG] FileName set to: " + Crawler.FileName);
                 StringBuilder stringBuilder = new StringBuilder();
-                string text = string.Format("Index,Certificate Type,File Name,Serial No,Issuer,Implementation Date,Expiration Date,Days to Expire", new object[0]);
-                if (File.Exists(Crawler.FileName))
+                string text = string.Format("Certificate Type,File Name,Serial No,Cert URL,Implementation Date,Expiration Date,Days to Expire", new object[0]);
+                bool flag = File.Exists(Crawler.FileName);
+                // Console.WriteLine("[DEBUG] File.Exists(Crawler.FileName): " + flag);
+                if (flag)
                 {
                     File.Delete(Crawler.FileName);
+                    // Console.WriteLine("[DEBUG] Deleted existing CSV file.");
                 }
                 Crawler.Counter = 0;
                 text = string.Format("{0},{1},{2},{3},{4},{5},{6},{7}", new object[]
@@ -125,7 +131,9 @@ namespace Crawler2
                 });
                 stringBuilder.AppendLine(text);
                 NameValueCollection nameValueCollectionSection = Crawler.GetNameValueCollectionSection("appSettings", Path.Combine(Crawler.baseDirectory, "WinCert.config"));
+                // Console.WriteLine("[DEBUG] Loaded appSettings section. Count: " + nameValueCollectionSection.Count);
                 bool flag2 = nameValueCollectionSection[0] == "Y";
+                // Console.WriteLine("[DEBUG] appSettings[0] == 'Y': " + flag2);
                 if (flag2)
                 {
                     X509Store computerCaStore = new X509Store(StoreName.Root, StoreLocation.LocalMachine);
@@ -138,33 +146,46 @@ namespace Crawler2
                 try
                 {
                     Crawler.baseDirectory = Directory.GetCurrentDirectory() + Path.DirectorySeparatorChar;
+                    // Console.WriteLine("[DEBUG] baseDirectory (again) set to: " + Crawler.baseDirectory);
                     NameValueCollection nameValueCollectionSection2 = Crawler.GetNameValueCollectionSection("Certificates", Path.Combine(Crawler.baseDirectory, "WinCert.config"));
+                    // Console.WriteLine("[DEBUG] Loaded Certificates section. Count: " + nameValueCollectionSection2.Count);
                     int i = 0;
                     while (i < nameValueCollectionSection2.Count)
                     {
+                        // Console.WriteLine("[DEBUG] Processing Certificates entry index: " + i + " value: " + nameValueCollectionSection2[i]);
                         string[] array = nameValueCollectionSection2[i].Split(new char[] { ',' });
+                        // Console.WriteLine("[DEBUG] Split array: " + string.Join("|", array));
                         if (array.Length == 0 || string.IsNullOrWhiteSpace(array[0]))
                         {
+                            // Console.WriteLine("[DEBUG] Skipping empty or malformed entry at index: " + i);
                             i++;
                             continue;
                         }
                         bool flag3 = array[0].Equals("p12");
+                        // Console.WriteLine("[DEBUG] array[0].Equals('p12'): " + flag3);
                         if (flag3)
                         {
                             try
                             {
                                 if (array.Length > 2)
                                 {
+                                    // Console.WriteLine("[DEBUG] Calling Cert1 with: " + array[1] + ", " + array[2]);
                                     Crawler.Cert1(array[1], array[2], stringBuilder, Crawler.FileName, text);
                                 }
                                 else if (array.Length > 1)
                                 {
+                                    // Console.WriteLine("[DEBUG] Calling Cert1 with: " + array[1] + ", p12");
                                     Crawler.Cert1(array[1], "p12", stringBuilder, Crawler.FileName, text);
                                 }
+                                else
+                                {
+                                    // Console.WriteLine("[DEBUG] Not enough data in Certificates entry at index: " + i);
+                                }
+                                goto IL_1BC;
                             }
                             catch (Exception ex)
                             {
-                                Console.WriteLine("The Password is Invalid." + ex.Message, text);
+                                // Console.WriteLine("The Password is Invalid." + ex.Message, text);
                                 goto IL_1BC;
                             }
                             goto IL_1BA;
@@ -174,13 +195,14 @@ namespace Crawler2
                         i++;
                         continue;
                     IL_1BA:
+                        // Console.WriteLine("[DEBUG] Calling Cert1 (fallback) with: " + array[1] + ", " + array[0]);
                         Crawler.Cert1(array[1], array[0], stringBuilder, Crawler.FileName, text);
                         goto IL_1BC;
                     }
                 }
                 catch (Exception ex)
                 {
-                    Console.WriteLine("Error reading app settings: " + ex.Message);
+                    // Console.WriteLine("[DEBUG] Error reading app settings: " + ex.Message);
                 }
                 Console.WriteLine("Certificate Extraction Successful");
             }
@@ -199,45 +221,61 @@ namespace Crawler2
                 ExeConfigFilename = filePath
             }, ConfigurationUserLevel.None);
             string rawXml = configuration.GetSection(section).SectionInformation.GetRawXml();
+            // Console.WriteLine("[DEBUG] Raw XML for section '" + section + "': " + rawXml);
             xmlDocument.LoadXml(rawXml);
             XmlNode xmlNode = xmlDocument.ChildNodes[0];
             foreach (XmlNode xmlNode2 in xmlNode)
             {
                 nameValueCollection.Add(xmlNode2.Attributes[0].Value, xmlNode2.Attributes[1].Value);
-                // Remove duplicate addition for Certificates section
+                bool flag = section == "Certificates";
+                if (flag)
+                {
+                    nameValueCollection.Add(xmlNode2.Attributes[0].Value, xmlNode2.Attributes[2].Value);
+                }
             }
             return nameValueCollection;
         }
 
-        // Remove duplicate processing of the same certificate file in Cert1
         private static void Cert1(string certpath, string certType, StringBuilder sb, string Filename, string newLine)
         {
+            // Console.WriteLine("[DEBUG] Cert1 called with certpath: " + certpath + ", certType: " + certType);
             string[] files = Directory.GetFiles(certpath, "*." + certType, SearchOption.TopDirectoryOnly);
-            HashSet<string> processedFiles = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            // Console.WriteLine("[DEBUG] Found files: " + string.Join(", ", files));
             int i = 0;
             while (i < files.Length)
             {
                 string text = files[i];
-                text = text.Replace('/', Path.DirectorySeparatorChar);
-                if (processedFiles.Contains(text))
-                {
-                    i++;
-                    continue;
-                }
-                processedFiles.Add(text);
+                // Normalize all paths to use backslashes to match what Encryption stores in .ini file
+                text = text.Replace('/', '\\');
+                // Console.WriteLine("[DEBUG] Processing file (normalized): " + text);
                 X509Certificate2Collection x509Certificate2Collection = new X509Certificate2Collection();
                 bool flag = certType.Equals("p12", StringComparison.CurrentCultureIgnoreCase);
                 if (flag)
                 {
                     try
                     {
+                        // Console.WriteLine("[DEBUG] Reading config for: " + text);
                         string text2 = Encryption.ReadConfig("DefaultNames", text, Crawler.baseDirectory);
+                        // Console.WriteLine("[DEBUG] ReadConfig returned: " + text2);
+                        bool flag2 = text2 == null;
+                        if (flag2)
+                        {
+                            // Console.WriteLine("[DEBUG] text2 is null");
+                        }
                         string text3 = Encryption.Decrypt(text2);
+                        // Console.WriteLine("[DEBUG] Decrypt returned: " + text3);
+                        bool flag3 = text3 == null;
+                        if (flag3)
+                        {
+                            // Console.WriteLine("[DEBUG] text3 is null");
+                        }
                         x509Certificate2Collection.Import(text, text3, X509KeyStorageFlags.MachineKeySet);
+                        // Console.WriteLine("[DEBUG] Certificate imported successfully.");
                         goto IL_31C;
                     }
-                    catch (Exception)
+                    catch (Exception var_14_C1)
                     {
+                        // Console.WriteLine("[DEBUG] Exception in Cert1 (p12): " + var_14_C1.Message);
                         newLine = string.Format("{0},{1},{2},{3},{4},{5},{6},{7}", new object[]
                         {
                             ++Crawler.Counter,
@@ -265,13 +303,28 @@ namespace Crawler2
                 {
                     try
                     {
+                        // Console.WriteLine("[DEBUG] Reading config for (jks): " + text);
                         string text4 = Encryption.ReadConfig("DefaultNames", text, Crawler.baseDirectory);
+                        // Console.WriteLine("[DEBUG] ReadConfig returned: " + text4);
+                        bool flag5 = text4 == null;
+                        if (flag5)
+                        {
+                            // Console.WriteLine("[DEBUG] text4 is null");
+                        }
                         string text5 = Encryption.Decrypt(text4);
+                        // Console.WriteLine("[DEBUG] Decrypt returned: " + text5);
+                        bool flag6 = text5 == null;
+                        if (flag6)
+                        {
+                            // Console.WriteLine("[DEBUG] text5 is null");
+                        }
                         x509Certificate2Collection.Import(text, text5, X509KeyStorageFlags.MachineKeySet);
+                        // Console.WriteLine("[DEBUG] Certificate imported successfully (jks).");
                         goto IL_31C;
                     }
-                    catch (Exception)
+                    catch (Exception var_20_1D9)
                     {
+                        // Console.WriteLine("[DEBUG] Exception in Cert1 (jks): " + var_20_1D9.Message);
                         newLine = string.Format("{0},{1},{2},{3},{4},{5},{6},{7}", new object[]
                         {
                             ++Crawler.Counter,
@@ -290,10 +343,12 @@ namespace Crawler2
                 }
                 try
                 {
+                    // Console.WriteLine("[DEBUG] Importing certificate without password: " + text);
                     x509Certificate2Collection.Import(text);
                 }
-                catch (Exception)
+                catch (Exception ex)
                 {
+                    // Console.WriteLine("[DEBUG] Exception importing certificate without password: " + ex.Message);
                     newLine = string.Format("{0},{1},{2},{3},{4},{5},{6},{7}", new object[]
                     {
                         ++Crawler.Counter,
@@ -337,9 +392,11 @@ namespace Crawler2
                         });
                         sb.AppendLine(newLine);
                         File.WriteAllText(Filename, sb.ToString());
+                        // Console.WriteLine("[DEBUG] Wrote certificate details to CSV.");
                     }
-                    catch (Exception)
+                    catch (Exception ex)
                     {
+                        // Console.WriteLine("[DEBUG] Exception writing certificate details: " + ex.Message);
                         newLine = string.Format("{0},{1},{2},{3},{4},{5},{6},{7}", new object[]
                         {
                             ++Crawler.Counter,
@@ -355,7 +412,7 @@ namespace Crawler2
                         File.WriteAllText(Filename, sb.ToString());
                     }
                 }
-                i++;
+                goto IL_159;
             }
         }
 
