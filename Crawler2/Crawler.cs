@@ -480,11 +480,16 @@ namespace Crawler2
         {
             if (string.IsNullOrEmpty(certType))
                 return false;
-                
+
             string lowerCertType = certType.ToLowerInvariant();
-            return lowerCertType == "p12" || 
-                   lowerCertType == "pfx" || 
-                   lowerCertType == "jks";
+            return lowerCertType == "p12" ||
+                   lowerCertType == "pfx" ||
+                   lowerCertType == "pkcs12" ||
+                   lowerCertType == "jks" ||
+                   lowerCertType == "jceks" ||
+                   lowerCertType == "bks" ||
+                   lowerCertType == "bcfks" ||
+                   lowerCertType == "kdb";
         }
     }
 }
