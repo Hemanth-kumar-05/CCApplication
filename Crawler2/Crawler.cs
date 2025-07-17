@@ -249,7 +249,8 @@ namespace Crawler2
                 text = text.Replace('/', '\\');
                 // Console.WriteLine("[DEBUG] Processing file (normalized): " + text);
                 X509Certificate2Collection x509Certificate2Collection = new X509Certificate2Collection();
-                bool flag = certType.Equals("p12", StringComparison.CurrentCultureIgnoreCase);
+                // Check if this is a password-protected certificate format
+                bool flag = IsPasswordProtectedFormat(certType);
                 if (flag)
                 {
                     try
@@ -275,7 +276,7 @@ namespace Crawler2
                     }
                     catch (Exception var_14_C1)
                     {
-                        // Console.WriteLine("[DEBUG] Exception in Cert1 (p12): " + var_14_C1.Message);
+                        // Console.WriteLine("[DEBUG] Exception in Cert1 (password-protected): " + var_14_C1.Message);
                         newLine = string.Format("{0},{1},{2},{3},{4},{5},{6},{7}", new object[]
                         {
                             ++Crawler.Counter,
@@ -291,79 +292,38 @@ namespace Crawler2
                         File.WriteAllText(Filename, sb.ToString());
                         goto IL_159;
                     }
-                    goto IL_157;
                 }
-                goto IL_157;
+                else
+                {
+                    // For non-password-protected certificates (cer, crt, pem, etc.)
+                    try
+                    {
+                        // Console.WriteLine("[DEBUG] Importing certificate without password: " + text);
+                        x509Certificate2Collection.Import(text);
+                        goto IL_31C;
+                    }
+                    catch (Exception ex)
+                    {
+                        // Console.WriteLine("[DEBUG] Exception importing certificate without password: " + ex.Message);
+                        newLine = string.Format("{0},{1},{2},{3},{4},{5},{6},{7}", new object[]
+                        {
+                            ++Crawler.Counter,
+                            Crawler.AddEscapeSequenceInCsvField(certType),
+                            Crawler.AddEscapeSequenceInCsvField(text),
+                            Crawler.AddEscapeSequenceInCsvField("Invalid Certificate"),
+                            Crawler.AddEscapeSequenceInCsvField("NA"),
+                            Crawler.AddEscapeSequenceInCsvField("NA"),
+                            Crawler.AddEscapeSequenceInCsvField("NA"),
+                            Crawler.AddEscapeSequenceInCsvField("NA")
+                        });
+                        sb.AppendLine(newLine);
+                        File.WriteAllText(Filename, sb.ToString());
+                        goto IL_159;
+                    }
+                }
             IL_159:
                 i++;
                 continue;
-            IL_157:
-                bool flag4 = certType.Equals("jks", StringComparison.CurrentCultureIgnoreCase);
-                if (flag4)
-                {
-                    try
-                    {
-                        // Console.WriteLine("[DEBUG] Reading config for (jks): " + text);
-                        string text4 = Encryption.ReadConfig("DefaultNames", text, Crawler.baseDirectory);
-                        // Console.WriteLine("[DEBUG] ReadConfig returned: " + text4);
-                        bool flag5 = text4 == null;
-                        if (flag5)
-                        {
-                            // Console.WriteLine("[DEBUG] text4 is null");
-                        }
-                        string text5 = Encryption.Decrypt(text4);
-                        // Console.WriteLine("[DEBUG] Decrypt returned: " + text5);
-                        bool flag6 = text5 == null;
-                        if (flag6)
-                        {
-                            // Console.WriteLine("[DEBUG] text5 is null");
-                        }
-                        x509Certificate2Collection.Import(text, text5, X509KeyStorageFlags.MachineKeySet);
-                        // Console.WriteLine("[DEBUG] Certificate imported successfully (jks).");
-                        goto IL_31C;
-                    }
-                    catch (Exception var_20_1D9)
-                    {
-                        // Console.WriteLine("[DEBUG] Exception in Cert1 (jks): " + var_20_1D9.Message);
-                        newLine = string.Format("{0},{1},{2},{3},{4},{5},{6},{7}", new object[]
-                        {
-                            ++Crawler.Counter,
-                            Crawler.AddEscapeSequenceInCsvField(certType),
-                            Crawler.AddEscapeSequenceInCsvField(text),
-                            Crawler.AddEscapeSequenceInCsvField("CERT Password is Not Valid"),
-                            Crawler.AddEscapeSequenceInCsvField("NA"),
-                            Crawler.AddEscapeSequenceInCsvField("NA"),
-                            Crawler.AddEscapeSequenceInCsvField("NA"),
-                            Crawler.AddEscapeSequenceInCsvField("NA")
-                        });
-                        sb.AppendLine(newLine);
-                        File.WriteAllText(Filename, sb.ToString());
-                        goto IL_159;
-                    }
-                }
-                try
-                {
-                    // Console.WriteLine("[DEBUG] Importing certificate without password: " + text);
-                    x509Certificate2Collection.Import(text);
-                }
-                catch (Exception ex)
-                {
-                    // Console.WriteLine("[DEBUG] Exception importing certificate without password: " + ex.Message);
-                    newLine = string.Format("{0},{1},{2},{3},{4},{5},{6},{7}", new object[]
-                    {
-                        ++Crawler.Counter,
-                        Crawler.AddEscapeSequenceInCsvField(certType),
-                        Crawler.AddEscapeSequenceInCsvField(text),
-                        Crawler.AddEscapeSequenceInCsvField("Invalid Certificate"),
-                        Crawler.AddEscapeSequenceInCsvField("NA"),
-                        Crawler.AddEscapeSequenceInCsvField("NA"),
-                        Crawler.AddEscapeSequenceInCsvField("NA"),
-                        Crawler.AddEscapeSequenceInCsvField("NA")
-                    });
-                    sb.AppendLine(newLine);
-                    File.WriteAllText(Filename, sb.ToString());
-                    goto IL_159;
-                }
             IL_31C:
                 X509Certificate2Enumerator enumerator = x509Certificate2Collection.GetEnumerator();
                 while (enumerator.MoveNext())
@@ -514,6 +474,17 @@ namespace Crawler2
                     File.WriteAllText(text, DateTime.Now.ToString() + "--" + msg + Environment.NewLine);
                 }
             }
+        }
+
+        private static bool IsPasswordProtectedFormat(string certType)
+        {
+            if (string.IsNullOrEmpty(certType))
+                return false;
+                
+            string lowerCertType = certType.ToLowerInvariant();
+            return lowerCertType == "p12" || 
+                   lowerCertType == "pfx" || 
+                   lowerCertType == "jks";
         }
     }
 }
